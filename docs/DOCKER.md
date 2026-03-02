@@ -230,3 +230,116 @@ alpine:latest.
 - **`docker image rm`**: is the command to delete images. You cannot delete an image that is associated with a container in the running (Up) or stopped (Exited) states.
 
 ## Docker containers
+In this part we're going to get into containers.
+And as usual we'll split this chapter into three sections:
+- The TLDR
+- The deep dive
+- The commands
+
+### Docker containers - The TLDR
+A container is the runtime instance of an image. they're so faster and lightweight because they share the OS/kernel with the host they're running on. We can start one or more containers from a single image
+
+<br>
+<img src="./assets/container.png" alt="container">
+</br>
+
+The simplest way to start a container is with the `docker container run` command, but its most basic form you tell it an image to use and a app to run: `docker container run <image> <app>`. The following command will start an *Ubuntu Linux* container running the *Bash shell* as its app.
+```bash
+$ docker container run -it ubuntu /bin/bash
+```
+
+The `-it` flag will connect your current terminal window to the container's shell.
+Containers run until the app they are executing exits. In the previous examples, the Linux container will exit when the Bash shell exits.
+
+You can manually stop a running container with the `docker container stop` command.
+
+### Docker containers - The deep dive
+The first things we'll cover here are the fundamental differences between a container and a VM.
+Anyway, Let's start with a scenario, let's assume a requirement where your business has a single physical server that needs to run 4 business applications.
+In the VM model, The physical server is powered on and the hypervisor boots. Once booted, the hypervisor lays claim to all physical resources on the system such as CPU, RAM, ROM, and NICs. It then carves these hardware resources into virtual versions that look smell and feel exactly like the real thing. It then packages them into a software construct called a virtual machine (VM). We take those VMs and install an operating system and application on each one. So the scenario in that model will look like
+
+<br>
+<img src="./assets/vm-scenario.png" alt="VM Scenario">
+</br>
+
+Things are a bit different in the container model.
+The server is powered on and the OS boots. the OS claims all hardware resources. On top of the OS, we install a container engine such as Docker. The container engine then takes OS resources such as the *process tree*, the *filesystem*, and the *network stack*, anc carves them into isolated constructs called containers. Each container looks smells and feels just like a real OS. Inside of each container we run an application. So the scenario will look like
+
+<br>
+<img src="./assets/container-scenario.png" alt="Container Scenario">
+</br>
+
+At a high level, hypervisors perform **hardware virtualization** — they carve up physical hardware resources into virtual versions called VMs. On the other hand, containers perform **OS virtualization** — they carve OS resources into virtual versions called containers.
+
+As a result, The VM model carves **low-level hardware resources** into VMs. Each VM is a software construct containing virtual CPUs, virtual RAm, virtual disks etc.As such every VM needs its own OS to manage those virtual resources.
+The container model has a single OS/kernel running on the host. It's possible to run tens or hunderds of containers on a single host with every container sharing that single OS/kernel.
+Another thing to consider is application start times. As a container isn't a full-blown OS, it starts **much faster** than a VM.
+
+Well, one thing that's not so great about the container model is **security**. Out of the box, containers are less secure and provide less workload isolation than VMs.
+
+Now, let's play around with some containers.
+The simplest way to start a container is with the `docker container run` command.
+The following command starts a simple container that will run a containerized version of Ubuntu Linux.
+```bash
+$ docker container run -it ubuntu:latest /bin/bash
+Unable to find image 'ubuntu:latest' locally
+latest: Pulling from library/ubuntu
+d51af753c3d3: Pull complete
+fc878cd0a91c: Pull complete
+6154df8ff988: Pull complete
+fee5db0ff82f: Pull complete
+Digest: sha256:747d2dbbaaee995098c9792d99bd333c6783ce56150d1b11e333bbceed5c54d7
+Status: Downloaded newer image for ubuntu:latest
+root@50949b614477:/#
+```
+
+When we started the Ubuntu container in the above example, we told it to run *Bash shell*. This makes the Bash shell the **one and only process running inside of the container**.
+If you're logged on to the container and type exit, you'll terminate the Bash process and the container will exit (terminate). This is because a container cannot exist without its designated main process. So **killing the main process in the container will kill the container**.
+
+Press *Ctrl-PQ* to exit the container without terminating its main process.
+
+You can use the `docker container ls` command to list all the running containers in you system.
+
+```bash
+$ docker container ls
+CNTNR ID IMAGE               COMMAND        CREATED         STATUS          NAMES
+509...74 ubuntu:latest       /bin/bash      6 mins          Up 6mins        sick_montalcini
+```
+
+This container is still running and you can re-attach your terminal to it with the `docker container exec` command.
+```bash
+$ docker container exec -it 50949b614474 bash
+root@50949b614477:/#
+```
+
+You can stop and delete a container using the following two commands.
+```bash
+$ docker container stop 50949b614474
+50949b614474
+
+$ docker container rm 50949b614474
+50949b614474
+```
+
+Containers can save data, If you write some data in a running container and then you stopped it, then you restart it again, the data will still there, but even if that illustrates the persistent nature of containers, it's important to understand two things:
+1. The data created is stored on the Docker hosts local filesystem. If the docker host fails, the data will be lost.
+2. Containers are designed to be immutable objects and it's not a good practice to write data to them.
+
+For these reasons, Docker provides *volumes* that exist separately from the container, but can be mounted into the container at runtime.
+
+### Docker containers - The commands
+- **`docker container run`**: is the command used to start new containers.
+
+- **`Ctrl-PQ`**: will detach your shell from the terminal of a container and leave the container running (UP) in the background.
+
+- **`docker container ls`**: lists all containers in the running (UP) state. If you add the *-a* ﬂag you will also see containers in the stopped (Exited) state.
+
+- **`docker container exec`**: runs a new process inside of a running container. It’s useful for attaching the shell of your Docker host to a terminal inside of a running container.
+
+- **`docker container stop`**: will stop a running container and put it in the Exited (0) state.
+
+- **`docker container start`**: will restart a stopped (Exited) container.
+
+- **`docker container rm`**: will delete a stopped container.
+- **`docker container inspect`**: will show you detailed conﬁguration and runtime information about a
+container. It accepts container names and container IDs as its main argument.
