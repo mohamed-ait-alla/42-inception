@@ -343,3 +343,229 @@ For these reasons, Docker provides *volumes* that exist separately from the cont
 - **`docker container rm`**: will delete a stopped container.
 - **`docker container inspect`**: will show you detailed conﬁguration and runtime information about a
 container. It accepts container names and container IDs as its main argument.
+
+## Containerizing an app
+Docker is all about taking applications and running them in containers.
+
+The process of taking an application and configuring it to run as a container is called "**containerizing**".
+
+In this chapter, we'll walk through the process of containerizing a simple linux-based web application.
+We'll split this chapter into the usual three parts:
+- The TLDR
+- The deep dive
+- The commands
+
+Let's containerize an app!
+
+### Containerizing an app - The TLDR
+The process of containerizing an app looks like this:
+1. Start with your application code and dependencies
+2. Create a Dockerﬁle that describes your app, its dependencies, and how to run it
+3. Feed the Dockerﬁle into the docker image build command
+4. Push the new image to a registry (optional)
+5. Run container from the image
+
+### Containerizing an app - The deep dive
+This chapter walks through the process of containerizing a simple Node.js web app.
+
+We'll complete the following high-level steps:
+- Clone the repo to get the app code
+- Inspect the Dockerﬁle
+- Containerize the app
+- Run the app
+
+So, let's get in!
+#### Getting the application code
+The application used in this example is available on Github at `https://github.com/nigelpoulton/psweb.git`
+Clone the app from github.
+```bash
+$ git clone https://github.com/nigelpoulton/psweb.git
+```
+
+move to the app directory
+
+```bash
+$ cd psweb
+$ ls -l
+total 28
+-rw-r--r-- 1 root root 341 Sep 29 16:26 app.js
+-rw-r--r-- 1 root root 216 Sep 29 16:26 circle.yml
+-rw-r--r-- 1 root root 338 Sep 29 16:26 Dockerfile
+-rw-r--r-- 1 root root 421 Sep 29 16:26 package.json
+-rw-r--r-- 1 root root 370 Sep 29 16:26 README.md
+drwxr-xr-x 2 root root 4096 Sep 29 16:26 test
+drwxr-xr-x 2 root root 4096 Sep 29 16:26 views
+```
+
+Now that we have the app code, let's look at its Dockerfile.
+
+#### Inspecting the Dockerfile
+A **Dockerfile** is the starting point for creating a container image, it describes an application and tells Docker how to build it into an image.
+
+Let's look at the contents of the Dockerfile.
+```bash
+$ cat Dockerfile
+FROM alpine
+LABEL maintainer="nigelpoulton@hotmail.com"
+RUN apk add --update nodejs nodejs-npm
+COPY . /src
+WORKDIR /src
+RUN npm install
+EXPOSE 8080
+ENTRYPOINT ["node", "./app.js"]
+```
+
+At a high-level, the Dockerfile says: Start with alpine image, make a note that "nigelpoulton@hotmail.com" is the maintainer, install Node.js and NPM, copy everthing in the build context to the /src directory in the image, set the working directory as /src, install depedencies, document the app's network port, and set app.js as the default application to run.
+
+#### Containerize the app/build the image
+So, let's build the image!
+The following command will build a new image called web:latestl. The period (.) at the end of the command tells docker to use shell's current working directory as the *build context*.
+```bash
+$ docker image build -t web:latest .
+```
+
+Check that the image exists in your Docker host's local repository.
+```bash
+$ docker image ls
+REPO          TAG         IMAGE ID            CREATED            SIZE
+web           latest      fc69fdc4c18e        10 seconds ago     81.5MB
+```
+
+Congratulations, the app is containerized!
+
+#### Run the app
+The containerized application is a web server that listens on TCP port 8080.
+The following command will start a new container called c1 based on the web:latest image you just created. It maps port 80 on the docker host, to port 8080 inside the container.
+
+```bash
+$ docker container run -d --name c1 \
+-p 80:8080 \
+web:latest
+```
+
+Check that the container is running and verify the port mapping.
+```bash
+$ docker container ls
+ID               IMAGE          COMMAND            STATUS          PORTS                   NAMES
+49..             web:latest     "node ./app.js"    UP 6 secs       0.0.0.0:80->8080/tcp    c1
+```
+
+Congratualtions!, the app container is running. Note that port 80 is mapped, on all host interfaces (0.0.0.0:8080).
+
+Open a web browser and point it to the DNS name or IP address of the host that the container is running on.
+and you'll see the web page.
+
+
+### Containerizing an app - The commands
+- **`docker image build`**: is the command that reads a Dockerﬁle and containerizes an application.
+- The **`FROM`**: instruction in a Dockerﬁle speciﬁes the base image for the new image you will build.
+- The **`RUN`**: instruction in a Dockerﬁle allows you to run commands inside the image. Each RUN instruction
+creates a single new layer.
+- The **`COPY`**: instruction in a Dockerﬁle adds ﬁles into the image as a new layer. It is common to use the COPY instruction to copy your application code into an image.
+- The **`EXPOSE`**: instruction in a Dockerﬁle documents the network port that the application uses.
+- The **`ENTRYPOINT`**: instruction in a Dockerﬁle sets the default application to run when the image is started as a container.
+
+## Docker Compose
+**Docker Compose** is a tool that deploys and manages multi-container applications on Docker nodes running in ***single-engine mode***.
+
+In this chapter, we'll  look at how to deploy multi-container applications using Docker Compose.
+
+We'll split this chapter into the usual three parts:
+- The TLDR
+- The deep dive
+- The commands
+
+### Docker Compose - The TLDR
+Modern cloud-native apps are made of multiple smaller services that interact to form a useful app. We call this pattern "microservices". A simple example might be an app with following seven services:
+- Web front-end
+- Ordering
+- Catalog
+- Back-end
+- logging
+- Authentication
+- Authorization
+
+Deploying and managing lots of small microservices like these can be hard. This is where *Docker Compose* comes in to play.
+
+So, Docker Compose lets you describe an entire app in a single declarative configuration file, and deploy it with a single command.
+
+Once the app is *deployed*, you can manage its entire lifecycle with a simple set of commands.
+
+### Docker Compose - The Deep Dive
+#### Compose background
+In the beginning was *Fig*. Fig was a powerfull tool, created by *Orchard* company, and it was the best way to manage multi-container Docker apps. It was a Python tool that sat on top of Docker, and let you define entire mutli-container apps in a single YAML file. You could then deploy and manage the lifecycle of the app with the `fig` command-line tool.
+
+Behind the scenes, Fig would read the YAML file and use Docker to deploy and manage the app via the Docker API. It was a good thing.
+
+In fact, it was so good, that Docker Inc. acquired *Orchard* and re-branded Fig as Docker Compose. The command-line tool was renamed from `fig` to `docker-compose`, and continues to be an external tool that gets bolted top of the Docker Engine.
+
+As things stand today, Compose is still an external Python binary that you have to install on a Docker host. You define mutli-container (microservices) apps in a YAML file, pass the file to the `docker-compose` command line, and Compose deploys it via the Docker API.
+
+#### Installing Compose
+Now, we're going to install Docker Compose on a Linux-based OS, and it required two-steps.
+
+**First**
+Download the binary using the curl command
+```bash
+$ sudo curl -L \
+"https://github.com/docker/compose/releases/download/1.25.5/docker-compose-$(uname -s)-$(uname -m)" \
+-o /usr/local/bin/docker-compose
+```
+
+**Second**
+Make the binary executable using chmod.
+```bash
+$ sudo chmod +x /usr/local/bin/docker-compose
+```
+
+Then you can verify the installation of Compose.
+```bash
+$ docker-compose --version
+```
+
+#### Compose files
+Compose uses YAML files to define mutli-service applications. YAML is a subset of JSON, so you can also use JSON.
+
+The default name for a Compose YAML file is `docker-compose.yml`.
+
+The following example shows a very simple Compose file that defines a small Flask app with two microservices (web-fe and redis).
+```yml
+version: "3.8"
+services:
+	web-fe:
+		build: .
+		command: python app.py
+		ports:
+			- target: 5000
+				published: 5000
+		networks:
+			- counter-net
+		volumes:
+			- type: volume
+			source: counter-vol
+			target: /code
+	redis:
+		image: "redis:alpine"
+		networks:
+			counter-net:
+networks:
+	counter-net:
+volumes:
+	counter-vol:
+```
+
+The first thing to note is that the file has 4 top-level keys:
+- version
+- services
+- networks
+- volumes
+
+The `version` key is mandatory, and it's always the first line at the root of the file. and it defines the version of the Compose file format.
+
+And it's important to note that the `version` key does not define the version of Docker Compose or the Docker Engine.
+
+The top-level `services` key is where you define the different application microservices. This example defines two services; a web front-end called *web-fe*, and an in-memory database called *redis*. Compose will deploy each of these services as its own container.
+
+The top-level `networks` key tells Docker to create new networks. By default, Compose will create bridge networks. These are single-host networks that can only connect containers on the same Docker host.
+
+The top-level `volumes` key is where you tell Docker to create new volumes.
