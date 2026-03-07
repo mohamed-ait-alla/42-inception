@@ -569,3 +569,127 @@ The top-level `services` key is where you define the different application micro
 The top-level `networks` key tells Docker to create new networks. By default, Compose will create bridge networks. These are single-host networks that can only connect containers on the same Docker host.
 
 The top-level `volumes` key is where you tell Docker to create new volumes.
+
+In summary, Compose will instruct Docker to deploy a single standalone container for the *web-fe* service. It
+will be based on an image built from a Dockerfile in the same directory as the Compose file. This image will be
+started as a container and run *app.py* as its main app. It will expose itself on port *5000* on the host, attach to the *counter-net* network, and mount a volume to */code*. Then it will start a single standalone container for the *redis* service. The *redis* container will be attached to the *counter-net* network.
+
+Now that we understand how the Compose file  works, let's deploy it!
+
+#### Deploying an app with compose
+In this section, we’ll deploy the app defined in the Compose file from the previous section. To do this, you’ll need the following 4 files from `hps://github.com/nigelpoulton/counter-app`:
+- Dockerfile
+- app.py
+- requirements.txt
+- docker-compose.yml
+
+So, Clone the repository to get the files. And let's deploy the  app using the `docker-compose up` command.
+```bash
+$ docker-compose up &
+```
+
+This command builds or pulls all required images, creates all required networks and volumes, and starts all required containers.
+
+With the application successfully deployed, you can point a web browser at your docker host on port *5000*  and see the application in all its glory.
+
+#### Managing an app with Compose
+In this section, you'll see how to start, stop, delete, and get the status of applications being managed by Docker Compose.  You’ll also see how the volume we’re using can be used to directly inject updates to the app’s web front-end.
+
+As the application is already up. let's see how to bring it down. To do this, replace the *up* sub-command with *down*.
+```bash
+$ docker-compose down
+1. Stopping counter-app_redis_1 ...
+2. Stopping counter-app_web-fe_1 ...
+3. redis_1 | 1:signal-handler Received SIGTERM scheduling shutdown...
+4. redis_1 | 1:M 09 Jan 11:16:00.456 # User requested shutdown...
+5. redis_1 | 1:M 09 Jan 11:16:00.456 * Saving the final RDB snap...
+6. redis_1 | 1:M 09 Jan 11:16:00.463 * DB saved on disk
+7. Stopping counter-app_redis_1 ... done
+8. counter-app_redis_1 exited with code 0
+9. Stopping counter-app_web-fe_1 ... done
+10. Removing counter-app_redis_1 ... done
+11. Removing counter-app_web-fe_1 ... done
+12. Removing network counter-app_counter-net
+13. [1]+ Done
+docker-compose up
+```
+
+It’s important to note that the *counter-vol* volume was not deleted. This is because volumes are intended to be
+long-term persistent data stores. As such, their lifecycle is entirely decoupled from the applications they serve. Running a `docker volume ls` will show that the volume is still present on the system. If you’d written any data to the volume, that data would still exist.
+
+Also, any images that were built or pulled as part of the `docker-compose up` operation will still be present on
+the system. This means future deployments of the app will be faster.
+
+Use the following command to bring the app up again, but this time in the baground.
+```bash
+$ docker-compose up-d
+Creating network "counter-app_counter-net" with the default driver
+Creating counter-app_redis_1 ... done
+Creating counter-app_web-fe_1 ... done
+```
+
+Show the current state of the app with the `docker-compose ps` command.
+```bash
+$ docker-compose ps
+Name                   Command                        State            Ports
+----------------------------------------------------------------------------------
+counter-app_redis_1    docker-entrypoint.sh redis..   Up               6379/tcp
+counter-app_web-fe_1   python app.py                  Up               0.0.0.0:5000->5000/tcp
+```
+
+Use `docker-compose top` to list the processes running inside of each service (container).
+```bash
+$ docker-compose top
+counter-app_redis_1
+PID     USER     TIME     COMMAND
+--------------------------------------
+19643   999      0:01     redis-server
+
+counter-app_web-fe_1
+PID     USER     TIME     COMMAND
+-------------------------------------------------------
+19679   root     0:00     python app.py
+19788   root     0:01     /usr/local/bin/python /code/app.py
+```
+
+Use the `docker-compose stop` command to stop the app without deleting its resources. Then show the status of
+the app with `docker-compose ps`.
+
+```bash
+$ docker-compose stop
+Stopping counter-app_web-fe_1 ... done
+Stopping counter-app_redis_1 ... done
+```
+
+```bash
+$ docker-compose ps
+Name                  Command                        State
+-----------------------------------------------------------
+counter-app_redis_1   docker-entrypoint.sh redis     Exit 0
+counter-app_web-fe_1  python app.py                  Exit 0
+```
+
+You can delete a stopped Compose app with `docker-compose rm`. This will delete the containers and networks
+the app is using, but it will not delete volumes or images. Nor will it delete the application source code in your project’s build context directory (app.py, Dockerfile, requirements.txt, and docker-compose.yml).
+
+You can use the `docker-compose down` command to **stop** and **delete** the app with a single command.
+
+It's also worth nothing to mention that any update to the contents of app.py in the project’s working directory on the Docker host will be affected in real time. Just we need to copy the updated app.py to the volume on the Docker host. Then refresh the app’s web page to see the updated data. This will work because whatever you write to the volume on the Docker host will immediately appear in the volume mounted in the container.
+
+### Deploying apps with Compose - The commands
+
+- **`docker-compose up`**: is the command to deploy a Compose app. It expects the Compose file to be called
+*docker-compose.yml*, but you can specify a custom filename with the `-f` flag.
+
+- **`docker-compose stop`**: will stop all of the containers in a Compose app without deleting them from the
+system.
+
+- **`docker-compose rm`**: will delete a stopped Compose app. It will delete containers and networks, but it will not delete volumes and images.
+
+- **`docker-compose restart`**: will restart a Compose app that has been stopped with `docker-compose stop`.
+
+- **`docker-compose ps`**:  will list each container in the Compose app. It shows current state, the command
+each one is running, and network ports.
+
+- **`docker-compose down`**:  will stop and delete a running Compose app. It deletes containers and networks,
+but not volumes and images.
