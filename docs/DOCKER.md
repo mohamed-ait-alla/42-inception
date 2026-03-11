@@ -693,3 +693,206 @@ each one is running, and network ports.
 
 - **`docker-compose down`**:  will stop and delete a running Compose app. It deletes containers and networks,
 but not volumes and images.
+
+
+## Docker Networking
+Any time there’s a an infrastructure problem, we always blame the network. Part of the reason is that networks 
+are at the center of everything — **no network, no app!**
+
+In this chapter, we’ll look at the fundamentals of Docker networking. Things like the Container Network Model 
+(CNM) and libnetwork. We’ll also get our hands dirty building some networks.
+
+As usual, we’ll split the chapter into three parts:
+- The TLDR
+- The deep dive
+- The commands
+
+### Docker Networking - The TLDR
+Docker runs applications inside of containers. and applications need to communicate over lots of different networks.
+
+Docker has solutions for container-to-container networks, as well as connecting to existing networks and VLANs.
+
+Docker networking is based on an open-source  pluggable architecture called the Container Network Model (CNM). *libnetwork* is Docker's real-world implementation of the CNM, and it provides all of Docker's core networking capabilities. Drivers plug in to libnetwork to provide specific network topologies.
+
+To create a smooth out-of-the-box experience, Docker ships with a set of native drivers that deal with the most
+common networking requirements. These include single-host bridge networks, multi-host overlays, and options
+for plugging into existing VLANs. Ecosystem partners can extend things further by providing their own drivers.
+
+Last but not least, libnetwork provides a native service discovery and basic container load balancing solution.
+
+### Docker Networking - The deep dive
+We’ll organize this section of the chapter as follows:
+- Overview
+- Single-host bridge networks
+- Multi-host overlay networks
+- Connecting to existing networks
+- Service Discovery
+
+#### Overview
+At the highest level, Docker networking comprises three major components:
+- The container Network Model (CNM)
+- libnetwork
+- Drivers
+
+The **CNM** is the design specification. It outlines the fundamental building blocks of a Docker network.
+
+libnetwork is a real-world implementation of the CNM, and is used by Docker. It’s written in Go, and implements
+the core components outlined in the *CNM*.
+
+Drivers extend the model by implementing specific network topologies such as VXLAN overlay networks.
+
+This picture shows how they fit together at a very high level.
+
+<br>
+<img src="./assets/todo.png" alt="Docker Networking">
+</br>
+
+#### Single-host bridge networks
+The simplest type of Docker network is the **single-host** bridge network.
+
+We can extract two things from the name:
+- **Single-host**: tell us it only exists on a single Docker host and can only connect containers that are on the same host. 
+- **Bridge**: tell us that it's an implementation of an *802.1d* bridge (layer 2 switch).
+
+This picture shows two Docker hosts with identical local bridge networks called “mynet”. Even though the
+networks are identical, they are independent isolated networks. This means the containers in the picture cannot
+communicate directly because they are on different networks.
+
+<br>
+<img src="./assets/todo.png" alt="Single-host bridge network example">
+</br>
+
+Every Docker host gets a default **single-host** bridge network. On Linux it’s called “bridge”. And by default it's the network that all new containers will be connected to unless you override it on the command line with the `--network` flag.
+
+The following listing shows the output of a `docker network ls` command on newly installed linux host.The output is trimmed so that it only shows the default network on each host. Notice how the name
+of the network is the same as the driver that was used to create it — this is a coincidence and not a requirement.
+```bash
+$ docker network ls
+
+NETWORK ID              NAME       DRIVER           SCOPE
+333e184cd343            bridge     bridge           local
+```
+
+Docker networks built with the bridge driver on Linux hosts are based on the battle-hardened linux bridge
+technology that has existed in the Linux kernel.
+
+The default “bridge” network, on all Linux-based Docker hosts, maps to an underlying Linux bridge in the kernel
+called “docker0”. We can see this from the output of `docker network inspect`.
+```bash
+$ docker network inspect bridge | grep bridge.name
+"com.docker.network.bridge.name": "docker0",
+```
+
+Let’s use the `docker network create` command to create a new single-host bridge network called “localnet”.
+
+```bash
+$ docker network create -d bridge localnet
+```
+
+The new network is created and will appear in the output of any future `docker network ls` commands. If you
+are using Linux, you will also have a new Linux bridge created in the kernel.
+
+Let's list the currently running bridges on the system using *brctl* tool.
+
+```bash
+$ brctl show
+
+bridge name         bridge id              STP enabled              interfaces
+docker0             8000.0242aff9eb4f      no
+br-20c2e8ae4bbb     8000.02429636237c      no
+```
+
+The output shows two bridges. The first line is the “docker0” bridge that we already know about. This relates
+to the default “bridge” network in Docker. The second bridge (br-20c2e8ae4bbb) relates to the new localnet
+Docker bridge network. Neither of them have spanning tree enabled, and neither have any devices connected
+(interfaces column).
+
+At this point, the bridge configuration on the host looks like this figure.
+
+<br>
+<img src="./assets/todo.png" alt="Single-host bridge network example">
+</br>
+
+Let’s create a new container and attach it to the new localnet bridge network.
+
+```bash
+$ docker container run-d--name c1 \
+  --network localnet \
+  alpine sleep 1d
+```
+
+If you run the Linux *brctl* show command again, you’ll see c1’s interface attached to the br-20c2e8ae4bbb
+bridge.
+
+```bash
+$ brctl show
+
+bridge name         bridge id                STP enabled             interfaces
+br-20c2e8ae4bbb     8000.02429636237c      no                        vethe792ac0
+docker0             8000.0242aff9eb4f      no
+```
+
+And this is shown in this figure.
+
+<br>
+<img src="./assets/todo.png" alt="Single-host bridge network example">
+</br>
+
+
+So far, we’ve said that containers on bridge networks can only communicate with other containers on the same
+network. However, you can get around this using port mappings.
+
+Port mappings let you map a container to a port on the Docker host. Any traffic hitting the Docker host on the
+configured port will be directed to the container.
+
+<br>
+<img src="./assets/todo.png" alt="Port mapping">
+</br>
+
+
+In the diagram, the application running in the container is operating on port `80`. This is mapped to port `5000` on the host’s `10.0.0.15` interface. The end result is all traffic hitting the host on `10.0.0.15:5000` being redirected to the container on port `80`.
+
+Mapping ports like this works, but it’s clunky and doesn’t scale. For example, only a single container can bind to any port on the host. This means no other containers on that host will be able to bind to port 5000. This is one of the reason’s that **single-host** bridge networks are only useful for local development and very small applications.
+
+#### Multi-host overlay networks
+**Overlay networks** are multi-host. They allow a single network to span multiple hosts so that containers on
+different hosts can communicate directly. They’re ideal for container-to-container communication, including
+container-only applications, and they scale well.
+
+Docker provides a native driver for **overlay** networks. This makes creating them as simple as adding the `--d overlay` flag to the `docker network create` command.
+
+
+#### Connecting to existing networks
+The ability to connect containerized apps to external systems and physical networks is vital. A common example
+is a partially containerized app — the containerized parts need a way to communicate with the non-containerized
+parts still running on existing physical networks and VLANs.
+
+The built-in *MACVLAN* driver was created with this in mind. It makes containers first class citizens on the existing physical networks by giving each one its own MAC address and IP addresses, as shown in that figure.
+
+<br>
+<img src="./assets/todo.png" alt="MACVLAN driver">
+</br>
+
+On the positive side, *MACVLAN* performance is good as it doesn’t require port mappings or additional bridges —
+you connect the container interface through to the hosts interface (or a sub-interface). However, on the negative side, it requires the host NIC to be in **promiscuous mode**, which isn’t always allowed on corporate networks and public cloud platforms. So *MACVLAN* is great for your corporate data center networks (assuming your network team can accommodate promiscuous mode), but it might not work in the public cloud.
+
+#### Service discovery
+As well as core networking, libnetwork also provides some important network services.
+
+**Service discovery** allows all containers and Swarm services to locate each other by name. The only requirement is that they be on the same network.
+
+Under the hood, this leverages Docker’s embedded *DNS server* and the *DNS resolver* in each container. This Figure shows container “c1” pinging container “c2” by name. The same principle applies to Swarm Services.
+
+<br>
+<img src="./assets/todo.png" alt="Service Discovery">
+</br>
+
+### Docker Networking- The Commands
+Docker networking has its own docker network sub-command. e main commands include:
+- **`docker network ls`**:  Lists all networks on the local Docker host.
+- **`docker network create`**:  Creates new Docker networks. By default, it creates them with the "nat" driver on Windows and the "bridge" driver on Linux. You can specify the driver (type of network) with the `-d` flag.
+`docker network create -d overlay overnet` will create a new overlay network called overnet with the
+native Docker overlay driver.
+- **`docker network inspect`**:  Provides detailed configuration information about a Docker network.
+- **`docker network prune`**:  Deletes all unused networks on a Docker host.
+- **`docker network rm`**: Deletes specific networks on a Docker host.
