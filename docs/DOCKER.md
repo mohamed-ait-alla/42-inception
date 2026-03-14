@@ -620,7 +620,7 @@ long-term persistent data stores. As such, their lifecycle is entirely decoupled
 Also, any images that were built or pulled as part of the `docker-compose up` operation will still be present on
 the system. This means future deployments of the app will be faster.
 
-Use the following command to bring the app up again, but this time in the baground.
+Use the following command to bring the app up again, but this time in the background.
 ```bash
 $ docker-compose up-d
 Creating network "counter-app_counter-net" with the default driver
@@ -896,3 +896,193 @@ native Docker overlay driver.
 - **`docker network inspect`**:  Provides detailed configuration information about a Docker network.
 - **`docker network prune`**:  Deletes all unused networks on a Docker host.
 - **`docker network rm`**: Deletes specific networks on a Docker host.
+
+## Volumes and persistent data
+We’ll turn our attention in this chapter to investigating how Docker handles applications that write persistent data.
+
+We’ll split the chapter into the usual three parts:
+- The TLDR
+- The deep dive
+- The commands
+
+### Volumes and persistent data - The TLDR
+
+There are two main categories of data — **persistent** and **non-persistent**.
+
+**Persistent** is the data you need to keep. things like; customer records, financial data, research results, etc... **Non-persistent** is the data you don’t need to keep.
+
+Both are important, and Docker has solutions for both.
+
+To deal with **non-persistent** data, every Docker container gets its own non-persistent storage. This is automatically created for every container and is tightly coupled to the lifecycle of the container. As a result, deleting the container will delete the storage and any data on it.
+
+To deal with **persistent** data, a container needs to store it in a *volume*. ***Volumes*** are separate objects that have their lifecycles decoupled from containers. This means you can create and manage volumes independently, and they’re not tied to the lifecycle of any container. Net result, you can delete a container that’s using a volume, and the volume won’t be deleted.
+
+### Volumes and persistent data - The Deep Dive
+Let's cover some ways that containers deal with persistent and non-persistent data.
+We’ll start out with non-persistent data.
+
+#### Containers and non-persistent data
+Many applications require a read-write filesystem in order to simply run – they won’t even run on
+a read-only filesystem. This means it’s not as simple as making containers entirely read-only. Every Docker
+container is created by adding a thin read-write layer on top of the read-only image it’s based on.
+
+This figure shows two running containers sharing a single read-only image.
+<br>
+<img src="./assets/todo.png" alt="Container Storage">
+</br>
+
+The writable container layer exists in the filesystem of the Docker host, and you’ll hear it called various names. These include **local storage**, **ephemeral storage**, and **graphdriver storage**. It’s typically located on the Docker host in these locations:
+
+- Linux Docker hosts: `/var/lib/docker/<storage-driver>/...`
+- Windows Docker hosts:` C:\ProgramData\Docker\windowsfilter\...`
+
+This thin writable layer is an integral part of a container and enables all read/write operations. If you, or an
+application, update files or add new files, they’ll be written to this layer. However, it’s tightly coupled to the container’s lifecycle — it gets created when the container is created and it gets deleted when the container is deleted. The fact that it’s deleted along with a container means that it’s not an option for important data that you need to keep (persist).
+
+#### Containers and persistent data
+***Volumes*** are the recommended way to persist data in containers. There are three major reasons for this:
+
+- Volumes are independent objects that are not tied to the lifecycle of a container
+- Volumes can be mapped to specialized external storage systems
+- Volumes enable multiple containers on different Docker hosts to access and share the same data
+
+At a high-level, you create a volume, then you create a container and mount the volume into it. The volume is
+mounted into a directory in the container’s filesystem, and anything written to that directory is stored in the
+volume. If you delete the container, the volume and its data will still exist.
+
+<br>
+<img src="./assets/todo.png" alt="Containers and Volumes">
+</br>
+
+The figure shows a Docker volume existing outside of the container as a separate object. It is mounted into the
+container’s filesystem at /data, and any data written to the /data directory will be stored on the volume and
+will exist after the container is deleted.
+
+#### Creating and managing Docker volumes
+***Volumes*** have also their own `docker volume` sub-command.
+
+Use the following command to create a new volume called *myvol*.
+```bash
+$ docker volume create myvol
+myvol
+```
+
+By default, Docker creates new volumes with the built-in local driver.  You can use the `-d` flag to specify a different driver.
+
+Now that the volume is created, you can see it with the `docker volume ls` command and inspect it with the
+`docker volume inspect` command.
+
+```bash
+$ docker volume ls
+DRIVER                 VOLUME NAME
+local                  myvol
+
+
+$ docker volume inspect myvol
+[
+	{
+		"CreatedAt": "2025-05-02T17:44:34Z",
+		"Driver": "local",
+		"Labels": {},
+		"Mountpoint": "/var/lib/docker/volumes/myvol/_data",
+		"Name": "myvol",
+		"Options": {},
+		"Scope": "local"
+	}
+]
+```
+
+Notice that the Driver and Scope are both local. This means the volume was created with the local driver and
+is only available to containers on this Docker host. The Mountpoint property tells us where in the Docker host’s
+filesystem the volume exists.
+
+There are two ways to delete a Docker volume:
+- `docker volume prune`: will delete all volumes that are not mounted into a container or service replica, so use with caution!.
+- `docker volume rm`: lets you specify exactly which volumes you want to delete.
+
+Neither command will delete a volume that is in use by a container or service replica.
+
+As the *myvol* volume is not in use, delete it with the prune command.
+```bash
+$ docker volume prune
+
+WARNING! This will remove all volumes not used by at least one container.
+Are you sure you want to continue? [y/N] y
+Deleted Volumes:
+myvol
+
+Total reclaimed space: 0B
+```
+
+Congratulations, you’ve created, inspected, and deleted a Docker volume.
+Let's see now how volumes interact with containers.
+
+#### Demonstrating volumes with containers and services
+Let’s see how to use volumes with containers and services.
+
+Ok, let's go with an example.
+Use the following command to create a new standalone container that mounts a volume called *bizvol*.
+
+```bash
+$ docker container run-dit--name voltainer \
+	--mount source=bizvol,target=/vol \
+	alpine
+```
+
+The command uses the `--mount` flag to mount a volume called “bizvol” into the container at /vol.
+
+The volume is brand new, so it doesn’t have any data. Let’s exec onto the container and write some data to it.
+```bash
+$ docker container exec -it voltainer sh
+
+/# echo "I promise to write a review of the book on Amazon" > /vol/file1
+
+/# ls-l /vol
+total 4-rw-r--r-- 1 root root 50 Jan 12 13:49 file1
+
+/# cat /vol/file1
+I promise to write a review of the book on Amazon
+```
+
+Type exit to return to the shell of your Docker host, and then delete the container with the following command.
+```bash
+$ docker container rm voltainer -f
+voltainer
+```
+
+Even though the container is deleted, the volume still exists:
+```bash
+$ docker container ls -a
+CONTAINER ID          IMAGE          COMMAND          CREATED           STATUS
+
+
+$ docker volume ls
+DRIVER         VOLUME NAME
+local          bizvol
+```
+
+Because the volume still exists, you can look at its mount point on the host to check if the data is still there.
+
+Run the following commands from the terminal of your Docker host. The first one will show that the file still
+exists, the second will show the contents of the file.
+
+```bash
+$ ls-l /var/lib/docker/volumes/bizvol/_data/
+total 4-rw-r--r-- 1 root root 50 Jan 12 14:25 file1
+
+$ cat /var/lib/docker/volumes/bizvol/_data/file1
+I promise to write a review of the book on Amazon
+```
+
+Great, the volume and data still exists.
+It’s even possible to mount the *bizvol* volume into a new service or container to see that the data persists.
+
+### Volumes and persistent data - The Commands
+- **`docker volume create`**:  is the command we use to create new volumes. By default, volumes are created
+with the local driver, but you can use the `-d` flag to specify a different driver.
+- **`docker volume ls`**:  will list all volumes on the local Docker host.
+- **`docker volume inspect`**:  shows detailed volume information.
+- **` docker volume prune`**: will delete **all** volumes that are not in use by a container or service replica. **Use with caution!**
+- **`docker volume rm`**: deletes specific volumes that are not in use.
+- **`docker plugin install`**:  will install new volume plugins from Docker Hub.
+- **`docker plugin ls`**:  lists all plugins installed on a Docker host.
