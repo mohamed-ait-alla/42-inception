@@ -6,3 +6,22 @@ services:
         ports:
             - "443:443"
         restart: on-failure
+
+    mariadb:
+        container_name: mariadb-container
+        build: ./requirements/mariadb/
+        image: mariadb:inception
+        restart: on-failure
+        env_file:
+          - .env
+        volumes:
+          - mariadb_data:/var/lib/mysql
+          
+
+volumes:
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/kali/data/mariadb
