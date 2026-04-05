@@ -1,5 +1,30 @@
+# This is read by the standalone daemon and embedded servers
+[server]
+
+# This only for the mysql standalone daemon
 [mysqld]
-datadir=/var/lib/mysql
-socket=/run/mysqld/mysqld.sock
-bind_address=*
-port=3306
+
+
+#
+# * Basic Settings
+#
+
+# User and Process ID
+user                 = mysql
+pid-file             = /run/mysqld/mysqld.pid
+
+# Connections
+socket               = /run/mysqld/mysqld.sock
+bind_address         = 0.0.0.0
+port                 = 3306
+
+# Data Storage Location
+datadir              = /var/lib/mysql
+
+# Character Encoding
+character-set-server = utf8mb4
+collation-server     = utf8mb4_general_ci
+
+# Debugging
+log_error            = /var/log/mysql/error.log
+
