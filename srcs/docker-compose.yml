@@ -1,10 +1,18 @@
+version: '3.8'
+
 services:
     nginx:
         container_name: nginx-container
         build: ./requirements/nginx/
         image: nginx:inception
+        depends_on:
+            - wordpress
         ports:
             - "443:443"
+        volumes:
+          - wordpress_data:/var/www/wordpress
+        networks:
+          - inception
         restart: on-failure
 
     mariadb:
@@ -16,12 +24,38 @@ services:
           - .env
         volumes:
           - mariadb_data:/var/lib/mysql
-          
+        networks:
+          - inception
+
+    wordpress:
+        container_name: wordpress-container
+        build: ./requirements/wordpress
+        image: wordpress:inception
+        depends_on:
+            - mariadb
+        env_file:
+            - .env
+        volumes:
+          - wordpress_data:/var/www/wordpress
+        networks:
+            - inception
+        restart: on-failure
+
 
 volumes:
-  mariadb_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/kali/data/mariadb
+    mariadb_data:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: /home/kali/data/mariadb
+    wordpress_data:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: /home/kali/data/wordpress
+
+networks:
+    inception:
+        driver: bridge
