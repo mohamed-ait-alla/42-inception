@@ -1,45 +1,60 @@
-version: '3.8'
-
 services:
-    nginx:
-        container_name: nginx-container
-        build: ./requirements/nginx/
-        image: nginx:inception
-        depends_on:
-            - wordpress
-        ports:
-            - "443:443"
-        volumes:
-          - wordpress_data:/var/www/wordpress
-        networks:
-          - inception
-        restart: on-failure
+  mariadb:
+    build: ./requirements/mariadb
+    container_name: mariadb-container
+    image: mariadb:inception
+    env_file:
+      - .env
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}", "-e", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
-    mariadb:
-        container_name: mariadb-container
-        build: ./requirements/mariadb/
-        image: mariadb:inception
-        restart: on-failure
-        env_file:
-          - .env
-        volumes:
-          - mariadb_data:/var/lib/mysql
-        networks:
-          - inception
+  wordpress:
+    build: ./requirements/wordpress
+    container_name: wordpress-container
+    image: wordpress:inception
+    env_file:
+      - .env
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - wordpress_data:/var/www/wordpress
+    networks:
+      - inception
+    restart: always
+    healthcheck:
+      test: ["CMD", "php-fpm8.2", "-t"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-    wordpress:
-        container_name: wordpress-container
-        build: ./requirements/wordpress
-        image: wordpress:inception
-        depends_on:
-            - mariadb
-        env_file:
-            - .env
-        volumes:
-          - wordpress_data:/var/www/wordpress
-        networks:
-            - inception
-        restart: on-failure
+  nginx:
+    build: ./requirements/nginx
+    container_name: nginx-container
+    image: nginx:inception
+    env_file:
+      - .env
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress_data:/var/www/wordpress
+    networks:
+      - inception
+    restart: always
+  
+
 
 
 volumes:
@@ -48,13 +63,13 @@ volumes:
         driver_opts:
             type: none
             o: bind
-            device: /home/kali/data/mariadb
+            device: /home/mait-all/data/mariadb
     wordpress_data:
         driver: local
         driver_opts:
             type: none
             o: bind
-            device: /home/kali/data/wordpress
+            device: /home/mait-all/data/wordpress
 
 networks:
     inception:

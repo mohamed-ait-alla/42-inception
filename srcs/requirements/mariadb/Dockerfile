@@ -10,5 +10,5 @@ RUN chmod +x /init.sh
 
 EXPOSE 3306
 
-CMD ["/init.sh"]
+ENTRYPOINT ["/init.sh"]
 

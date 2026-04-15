@@ -13,11 +13,11 @@ RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.ph
 RUN tar -xvf latest.tar.gz && \
     mv wordpress /var/www
 
-RUN chown -R www-data:www-data /var/www/wordpress
-RUN chmod -R 775 /var/www/wordpress
+RUN chown -R www-data:www-data /var/www/wordpress && \
+	chmod -R 775 /var/www/wordpress
 
-RUN chmod +x wp-cli.phar
-RUN mv wp-cli.phar /usr/local/bin/wp
+RUN chmod +x wp-cli.phar && \
+	mv wp-cli.phar /usr/local/bin/wp
 
 RUN sed -i 's/listen = \/run\/php\/php8.2-fpm.sock/listen = 9000/' /etc/php/8.2/fpm/pool.d/www.conf && \
     sed -i 's/;listen.owner = www-data/listen.owner = www-data/' /etc/php/8.2/fpm/pool.d/www.conf && \

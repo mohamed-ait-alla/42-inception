@@ -1,20 +1,29 @@
 #!/bin/bash
 
-# Starting mysql service
+# create mysql socket directory
+mkdir -p /run/mysqld
+chown mysql:mysql /run/mysqld
+
+# starting mysql service
 mysqld_safe &
 
-until mysqladmin ping --silent; do
-    sleep 1
-done
+# waiting for it to get started
+sleep 5
 
-# Initializing Database
-mysql -e "CREATE DATABASE IF NOT EXISTS $MYSQL_DATABASE;"
-mysql -e "CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';"
-mysql -e "GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';"
-mysql -e "FLUSH PRIVILEGES;"
+# initializing mysql users and database
+mysql -h localhost -u root <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF
 
-mysqladmin -u root -p $MYSQL_ROOT_PASSWORD shutdown
+# stoping mysql service to take new settings
+mysql -h localhost -u root -p$MYSQL_ROOT_PASSWORD shutdown
 
 wait
 
-exec mysqld_safe
+exec mysqld --user=mysql

@@ -1,10 +1,14 @@
 #!/bin/bash
 
+echo "Waiting for mariadb to get started..."
+
 # Wait for MariaDB
-until mysqladmin ping -h mariadb --silent; do
-    echo "sleeping..."
+until mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1;" >/dev/null 2>&1; do
+    echo "Waiting for MariaDB..."
     sleep 1
 done
+
+echo "Mariadb is UP..."
 
 cd /var/www/wordpress
 
