@@ -10,10 +10,8 @@ done
 
 echo "Mariadb is UP..."
 
-cd /var/www/wordpress
-
-if [ ! -f wp-config.php ]; then
-	# Create wp-config.php
+if [ ! -f wp-load.php ]; then
+	wp core download --allow-root
 	wp config create \
 		--dbname=$MYSQL_DATABASE \
 		--dbuser=$MYSQL_USER \
@@ -23,7 +21,6 @@ if [ ! -f wp-config.php ]; then
 fi
 
 if  ! wp core is-installed --allow-root; then
-	# Install WordPress
 	wp core install \
 		--url=$WORDPRESS_URL \
 		--title=$WORDPRESS_TITLE \
@@ -37,6 +34,9 @@ if  ! wp core is-installed --allow-root; then
 		--user_pass=$WORDPRESS_USER_PASSWORD \
 		--allow-root
 fi
+
+chown -R www-data:www-data /var/www/html
+chmod -R 775 /var/www/html
 
 # Start PHP-FPM
 exec php-fpm8.2 -F

@@ -27,7 +27,7 @@ services:
       mariadb:
         condition: service_healthy
     volumes:
-      - wordpress_data:/var/www/wordpress
+      - wordpress_data:/var/www/html
     networks:
       - inception
     restart: always
@@ -49,7 +49,7 @@ services:
     ports:
       - "443:443"
     volumes:
-      - wordpress_data:/var/www/wordpress
+      - wordpress_data:/var/www/html
     networks:
       - inception
     restart: always
