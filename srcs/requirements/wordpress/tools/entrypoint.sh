@@ -33,6 +33,14 @@ if  ! wp core is-installed --allow-root; then
 	wp user create $WORDPRESS_USER $WORDPRESS_USER_EMAIL \
 		--user_pass=$WORDPRESS_USER_PASSWORD \
 		--allow-root
+
+	wp config set WP_REDIS_HOST redis --allow-root
+	wp config set WP_REDIS_PORT 6379 --allow-root
+	wp config set WP_CACHE true --allow-root
+	
+	wp plugin install redis-cache --activate --allow-root
+
+	wp redis enable --allow-root
 fi
 
 chown -R www-data:www-data /var/www/html
