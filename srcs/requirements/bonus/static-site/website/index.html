@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>Inception Static Site</title>
+
+    <!-- Google Font for Arabic -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Amiri', serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            text-align: center;
+            width: 80%;
+        }
+
+        .ayah-container {
+            margin-top: 40px;
+            width: 100%;
+            overflow: hidden;
+            border-top: 1px solid #334155;
+            border-bottom: 1px solid #334155;
+            padding: 20px 0;
+        }
+
+        .ayah {
+            display: inline-block;
+            white-space: nowrap;
+            font-size: 1.8rem;
+            direction: rtl;
+            animation: scrollRTL 15s linear infinite;
+        }
+
+        @keyframes scrollRTL {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Welcome to My Inception Project 🚀</h1>
+        <p>Static Website served with Nginx</p>
+
+        <div class="ayah-container">
+            <div class="ayah">
+               وَلَا تَهِنُوا۟ وَلَا تَحْزَنُوا۟ وَأَنتُمُ ٱلْأَعْلَوْنَ إِن كُنتُم مُّؤْمِنِينَ
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2026 - 42 Inception Project
+    </footer>
+
+</body>
+</html>
