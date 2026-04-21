@@ -121,6 +121,18 @@ services:
       - inception
     restart: on-failure
 
+  cadvisor:
+    build: ./requirements/bonus/cadvisor
+    container_name: cadvisor-container
+    image: cadvisor:inception
+    volumes:
+        - /:/rootfs:ro
+        - /var/run:/var/run:ro
+        - /sys:/sys:ro
+        - /var/lib/docker:/var/lib/docker:ro
+    networks:
+        - inception
+    restart: on-failure
 
 volumes:
     mariadb_data:
