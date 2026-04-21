@@ -110,6 +110,16 @@ services:
       - inception
     restart: on-failure
 
+  portainer:
+    build: ./requirements/bonus/portainer
+    container_name: portainer-container
+    image: portainer:inception
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - inception
+    restart: on-failure
 
 
 volumes:
@@ -125,6 +135,12 @@ volumes:
             type: none
             o: bind
             device: /home/mait-all/data/wordpress
+    portainer_data:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: /home/mait-all/data/portainer
 
 networks:
     inception:
