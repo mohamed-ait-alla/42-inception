@@ -9,7 +9,7 @@ services:
       - mariadb_data:/var/lib/mysql
     networks:
       - inception
-    restart: always
+    restart: on-failure
     healthcheck:
       test: ["CMD", "mysql", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}", "-e", "SELECT 1"]
       interval: 5s
@@ -32,7 +32,7 @@ services:
       - wordpress_data:/var/www/html
     networks:
       - inception
-    restart: always
+    restart: on-failure
     healthcheck:
       test: ["CMD", "php-fpm8.2", "-t"]
       interval: 10s
@@ -54,7 +54,7 @@ services:
       - wordpress_data:/var/www/html
     networks:
       - inception
-    restart: always
+    restart: on-failure
 
   redis:
     build: ./requirements/bonus/redis/
@@ -62,7 +62,7 @@ services:
     image: redis:inception
     networks:
       - inception
-    restart: always
+    restart: on-failure
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -85,7 +85,7 @@ services:
       - wordpress_data:/var/www/html
     networks:
       - inception
-    restart: always
+    restart: on-failure
   
   adminer:
     build: ./requirements/bonus/adminer
