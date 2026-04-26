@@ -235,6 +235,11 @@ A container resource monitoring tool developed by Google. Served through NGINX  
 - [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/)
 - [OpenSSL man page](https://www.openssl.org/docs/man1.1.1/man1/openssl-req.html)
 
+### other
+- [namespaces and cgroups](https://jvns.ca/blog/2016/10/10/what-even-is-a-container/)
+- [container runtimes](https://www.ianlewis.org/en/container-runtimes-part-1-introduction-container-r?ref=devopscube.com)
+- [what is docker?](https://devopscube.com/what-is-docker/)
+
 ### AI Usage
 
 AI tools was used throughout this project as a **learning and debugging assistant**, specifically for:
