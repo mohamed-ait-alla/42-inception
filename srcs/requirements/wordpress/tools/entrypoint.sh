@@ -2,7 +2,7 @@
 
 echo "Waiting for mariadb to get started..."
 
-# Wait for MariaDB
+# Waiting for MariaDB to be ready
 until mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1;" >/dev/null 2>&1; do
     echo "Waiting for MariaDB..."
     sleep 1
@@ -10,8 +10,12 @@ done
 
 echo "Mariadb is UP..."
 
+# Check if wordpress is already downloaded
 if [ ! -f wp-load.php ]; then
+	# Download wordpress core files
 	wp core download --allow-root
+
+	# Create wordpress configuration file (wp-config.php)
 	wp config create \
 		--dbname=$MYSQL_DATABASE \
 		--dbuser=$MYSQL_USER \
@@ -20,7 +24,9 @@ if [ ! -f wp-load.php ]; then
 		--allow-root
 fi
 
+# check if wordpress is already installed
 if  ! wp core is-installed --allow-root; then
+	# Launch the standard wordpress installation process
 	wp core install \
 		--url=$WORDPRESS_URL \
 		--title=$WORDPRESS_TITLE \
@@ -34,6 +40,7 @@ if  ! wp core is-installed --allow-root; then
 		--user_pass=$WORDPRESS_USER_PASSWORD \
 		--allow-root
 
+	# Configure redis caching
 	wp config set WP_REDIS_HOST redis --allow-root
 	wp config set WP_REDIS_PORT 6379 --allow-root
 	wp config set WP_CACHE true --allow-root
@@ -43,6 +50,7 @@ if  ! wp core is-installed --allow-root; then
 	wp redis enable --allow-root
 fi
 
+# Set permissions required by php-fpm that runs as www-data user
 chown -R www-data:www-data /var/www/html
 chmod -R 775 /var/www/html
 
