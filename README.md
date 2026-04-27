@@ -141,6 +141,9 @@ cd 42-inception
 
 Create a `.env` file in `srcs/`:
 ```bash
+# Domain name
+DOMAIN_NAME=login.42.fr
+
 # Database
 MYSQL_HOST=mariadb
 MYSQL_DATABASE=wordpress
@@ -149,7 +152,6 @@ MYSQL_PASSWORD=your_db_user_password
 MYSQL_ROOT_PASSWORD=your_root_password
 
 # WordPress
-WORDPRESS_URL=https://localhost
 WORDPRESS_TITLE=your_wp_title
 WORDPRESS_ADMIN_USER=your_admin_user
 WORDPRESS_ADMIN_PASSWORD=your_admin_password
@@ -161,6 +163,17 @@ WORDPRESS_USER_PASSWORD=your_normal_user_password
 # FTP
 FTP_USER=your_ftp_user
 FTP_PASSWORD=your_ftp_password
+```
+
+Edit your `/etc/hosts` file to map your domain locally:
+```bash
+# Debian/Linux
+sudo nano /etc/hosts
+```
+
+And add the following line:
+```bash
+127.0.0.1    login.42.fr
 ```
 
 ### Build and Run
@@ -177,8 +190,8 @@ make re     # full rebuild from scratch
 
 | Service | URL |
 |---|---|
-| WordPress | https://localhost |
-| Adminer | https://localhost/adminer |
+| WordPress | https://login.42.fr |
+| Adminer | https://login.42.fr/adminer |
 
 > **Note:** Since NGINX uses a self-signed certificate, your browser will show a security warning. This is expected — proceed by accepting the certificate.
 
