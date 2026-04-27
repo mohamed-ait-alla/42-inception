@@ -28,7 +28,7 @@ fi
 if  ! wp core is-installed --allow-root; then
 	# Launch the standard wordpress installation process
 	wp core install \
-		--url=$WORDPRESS_URL \
+		--url="https://$DOMAIN_NAME" \
 		--title=$WORDPRESS_TITLE \
 		--admin_user=$WORDPRESS_ADMIN_USER \
 		--admin_password=$WORDPRESS_ADMIN_PASSWORD \
