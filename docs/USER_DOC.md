@@ -21,13 +21,13 @@ The Inception stack runs the following services, each in its own Docker containe
 | Service | Role | Access |
 |---|---|---|
 | **NGINX** | Main entry point, handles HTTPS and routes traffic | Transparent — all requests go through it |
-| **WordPress** | The main website and blog platform | https://localhost |
+| **WordPress** | The main website and blog platform | https://login.42.fr |
 | **MariaDB** | Database that stores all WordPress content | Internal only (not exposed to host) |
 | **Redis** | Cache layer that speeds up WordPress | Internal only |
-| **Adminer** | Web UI to browse and manage the database | https://localhost/adminer |
-| **Portainer** | Web UI to manage Docker containers and images | https://localhost/portainer |
-| **cAdvisor** | Real-time container resource monitoring | https://localhost/cadvisor |
-| **FTP Server** | File access to WordPress files | ftp://localhost (port 21) |
+| **Adminer** | Web UI to browse and manage the database | https://login.42.fr/adminer |
+| **Portainer** | Web UI to manage Docker containers and images | https://login.42.fr/portainer |
+| **cAdvisor** | Real-time container resource monitoring | https://login.42.fr/cadvisor |
+| **FTP Server** | File access to WordPress files | ftp://login.42.fr (port 21) |
 
 > All web services are served over HTTPS through NGINX. MariaDB and Redis are internal services and cannot be accessed directly from outside the stack.
 
@@ -86,12 +86,12 @@ Shortcut for `make fclean` followed by `make` — a full rebuild from zero.
 
 Open your browser and go to:
 ```
-https://localhost
+https://login.42.fr
 ```
 
 The WordPress site will load. To access the WordPress admin dashboard:
 ```
-https://localhost/wp-admin
+https://login.42.fr/wp-admin
 ```
 
 Log in with the admin credentials defined in your `.env` file (see [Credentials](#credentials)).
@@ -99,7 +99,7 @@ Log in with the admin credentials defined in your `.env` file (see [Credentials]
 ### Adminer (database management)
 
 ```
-https://localhost/adminer
+https://login.42.fr/adminer
 ```
 
 Fill in the login form as follows:
@@ -115,7 +115,7 @@ Fill in the login form as follows:
 ### Portainer (Docker management)
 
 ```
-https://localhost/portainer
+https://login.42.fr/portainer
 ```
 
 On first visit, Portainer will ask you to create an admin account. Once logged in, you can browse containers, images, volumes, and networks through the visual interface.
@@ -123,7 +123,7 @@ On first visit, Portainer will ask you to create an admin account. Once logged i
 ### cAdvisor (container monitoring)
 
 ```
-https://localhost/cadvisor
+https://login.42.fr/cadvisor
 ```
 
 No login required. Displays real-time CPU, memory, network, and disk usage for each running container.
@@ -133,7 +133,7 @@ No login required. Displays real-time CPU, memory, network, and disk usage for e
 Connect using any FTP client (e.g. FileZilla) or from the terminal:
 
 ```bash
-ftp localhost
+ftp login.42.fr
 ```
 
 Log in with the FTP credentials defined in your `.env` file. You will land directly inside the WordPress files directory (`/var/www/html`).
@@ -154,6 +154,9 @@ srcs/.env
 ### What the `.env` file contains
 
 ```bash
+# Domain name
+DOMAIN_NAME=login.42.fr
+
 # MariaDB
 MYSQL_HOST=                # network location of mariadb server
 MYSQL_ROOT_PASSWORD=       # root password for the database
@@ -162,7 +165,6 @@ MYSQL_USER=                # WordPress database user
 MYSQL_PASSWORD=            # WordPress database user password
 
 # WordPress
-WORDPRESS_URL=             # site URL (https://localhost)
 WORDPRESS_TITLE=           # site title
 WORDPRESS_ADMIN_USER=      # WordPress admin username
 WORDPRESS_ADMIN_PASSWORD=  # WordPress admin password
@@ -252,10 +254,10 @@ docker exec -it nginx-container nginx -t
 
 For a live overview of all container resource usage, visit:
 ```
-https://localhost/cadvisor
+https://login.42.fr/cadvisor
 ```
 
 For managing and inspecting containers visually, visit:
 ```
-https://localhost/portainer
+https://login.42.fr/portainer
 ```
