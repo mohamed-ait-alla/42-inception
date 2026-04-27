@@ -124,6 +124,9 @@ touch srcs/.env
 Fill it with the following variables:
 
 ```bash
+# ── Domain ─────────────────────────────────────────
+DOMAIN_NAME=login.42.fr
+
 # ── MariaDB ────────────────────────────────────────
 MYSQL_HOST=mariadb
 MYSQL_ROOT_PASSWORD=your_root_password
@@ -132,7 +135,6 @@ MYSQL_USER=wp_user
 MYSQL_PASSWORD=your_wp_password
 
 # ── WordPress ──────────────────────────────────────
-WORDPRESS_URL=https://localhost
 WORDPRESS_TITLE=My WordPress Site
 WORDPRESS_ADMIN_USER=admin
 WORDPRESS_ADMIN_PASSWORD=your_admin_password
@@ -148,7 +150,19 @@ FTP_PASSWORD=your_ftp_password
 
 > Never use weak passwords. MariaDB and WordPress passwords must be strong — they are injected directly into running services at container startup.
 
-### 3. Create host data directories
+### 3. Update Your Domain
+Edit your `/etc/hosts` file to map your domain locally:
+```bash
+# Debian/Linux
+sudo nano /etc/hosts
+```
+
+And add the following line:
+```bash
+127.0.0.1    login.42.fr
+```
+
+### 4. Create host data directories
 
 The Makefile handles this automatically, but you can also do it manually:
 
