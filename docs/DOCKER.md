@@ -744,7 +744,7 @@ Drivers extend the model by implementing specific network topologies such as VXL
 This picture shows how they fit together at a very high level.
 
 <br>
-<img src="./assets/todo.png" alt="Docker Networking">
+<img src="./assets/docker-networking.png" alt="Docker Networking">
 </br>
 
 #### Single-host bridge networks
@@ -759,7 +759,7 @@ networks are identical, they are independent isolated networks. This means the c
 communicate directly because they are on different networks.
 
 <br>
-<img src="./assets/todo.png" alt="Single-host bridge network example">
+<img src="./assets/single-host-bridge-networks.png" alt="Single-host bridge network example">
 </br>
 
 Every Docker host gets a default **single-host** bridge network. On Linux it’s called “bridge”. And by default it's the network that all new containers will be connected to unless you override it on the command line with the `--network` flag.
@@ -810,7 +810,7 @@ Docker bridge network. Neither of them have spanning tree enabled, and neither h
 At this point, the bridge configuration on the host looks like this figure.
 
 <br>
-<img src="./assets/todo.png" alt="Single-host bridge network example">
+<img src="./assets/single-host-bridge-networks-example.png" alt="Single-host bridge network example">
 </br>
 
 Let’s create a new container and attach it to the new localnet bridge network.
@@ -835,7 +835,7 @@ docker0             8000.0242aff9eb4f      no
 And this is shown in this figure.
 
 <br>
-<img src="./assets/todo.png" alt="Single-host bridge network example">
+<img src="./assets/single-host-bridge-network-example-1.png" alt="Single-host bridge network example">
 </br>
 
 
@@ -846,7 +846,7 @@ Port mappings let you map a container to a port on the Docker host. Any traffic 
 configured port will be directed to the container.
 
 <br>
-<img src="./assets/todo.png" alt="Port mapping">
+<img src="./assets/port-mapping.png" alt="Port mapping">
 </br>
 
 
@@ -870,7 +870,7 @@ parts still running on existing physical networks and VLANs.
 The built-in *MACVLAN* driver was created with this in mind. It makes containers first class citizens on the existing physical networks by giving each one its own MAC address and IP addresses, as shown in that figure.
 
 <br>
-<img src="./assets/todo.png" alt="MACVLAN driver">
+<img src="./assets/macVlan-network.png" alt="MACVLAN driver">
 </br>
 
 On the positive side, *MACVLAN* performance is good as it doesn’t require port mappings or additional bridges —
@@ -884,7 +884,7 @@ As well as core networking, libnetwork also provides some important network serv
 Under the hood, this leverages Docker’s embedded *DNS server* and the *DNS resolver* in each container. This Figure shows container “c1” pinging container “c2” by name. The same principle applies to Swarm Services.
 
 <br>
-<img src="./assets/todo.png" alt="Service Discovery">
+<img src="./assets/service-discovery.png" alt="Service Discovery">
 </br>
 
 ### Docker Networking- The Commands
@@ -928,7 +928,7 @@ container is created by adding a thin read-write layer on top of the read-only i
 
 This figure shows two running containers sharing a single read-only image.
 <br>
-<img src="./assets/todo.png" alt="Container Storage">
+<img src="./assets/container-storage.png" alt="Container Storage">
 </br>
 
 The writable container layer exists in the filesystem of the Docker host, and you’ll hear it called various names. These include **local storage**, **ephemeral storage**, and **graphdriver storage**. It’s typically located on the Docker host in these locations:
@@ -951,7 +951,7 @@ mounted into a directory in the container’s filesystem, and anything written t
 volume. If you delete the container, the volume and its data will still exist.
 
 <br>
-<img src="./assets/todo.png" alt="Containers and Volumes">
+<img src="./assets/volumes-and-containers.png" alt="Containers and Volumes">
 </br>
 
 The figure shows a Docker volume existing outside of the container as a separate object. It is mounted into the
