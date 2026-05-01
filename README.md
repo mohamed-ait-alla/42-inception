@@ -43,32 +43,10 @@ All containers are built from `debian:12` base images using custom Dockerfiles. 
 
 ## Architecture Overview
 
-```
-                        ┌─────────────────────────────────────────┐
-                        │              Host Machine               │
-                        │                                         │
-                        │   https://localhost (port 443)          │
-                        │   ftp://localhost   (port 21)           │
-                        │   http://localhost/adminer (port 443)   │
-                        └────────────────┬────────────────────────┘
-                                         │
-                              ┌──────────▼──────────┐
-                              │       NGINX         │
-                              │   (TLS termination) │
-                              └──┬──────────────┬───┘
-                                 │              │
-                    ┌────────────▼───┐    ┌─────▼──────────┐
-                    │   WordPress    │    │    Adminer     │
-                    │   php-fpm:9000 │    │    php:8080    │
-                    └────────┬───────┘    └────────────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-     ┌────────▼──────┐  ┌────▼────┐  ┌─────▼──────┐
-     │   MariaDB     │  │  Redis  │  │  FTP Server│
-     │   port 3306   │  │  :6379  │  │  port 21   │
-     └───────────────┘  └─────────┘  └────────────┘
-```
+<br>
+<img src="./docs/assets/infrastructor_diagram.png" alt="Infrastructor Diagram">
+</br>
+
 
 All services communicate over a custom Docker bridge network called `inception`.
 
