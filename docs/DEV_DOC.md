@@ -54,6 +54,12 @@ docker ps
 
 ```
 inception/
+├── docs/
+│	 ├── assets/
+│	 │		└── *.png
+│	 ├── DEV_DOC.md
+│	 ├── DOCKER.md
+│	 └── USER_DOC.md
 ├── srcs/
 │    ├── .env                          # environment variables (not committed)
 │    ├── docker-compose.yml
@@ -97,8 +103,6 @@ inception/
 │                └── Dockerfile
 ├── .gitignore
 ├── Makefile
-├── DEV_DOC.md
-├── USER_DOC.md
 └── README.md
 ```
 
